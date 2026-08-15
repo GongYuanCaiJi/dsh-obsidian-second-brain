@@ -1,0 +1,12 @@
+# Ensure shell scripts always use LF, regardless of editor/OS
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# Python
+*.py    text eol=lf
+
+# Command frontmatter is parsed by the shell adapters during platform builds.
+commands/*.md text eol=lf
+
+# Default: normalize everything else to LF
+*       text=auto

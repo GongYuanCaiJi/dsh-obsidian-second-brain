@@ -1,0 +1,40 @@
+---
+description: Run a vault health check - grouped by severity, detects contradictions, concept gaps, stale claims, and structural issues
+category: meta
+triggers_en: ["vault health", "check vault", "audit vault", "vault diagnostics"]
+triggers_es: ["salud del vault", "revisa el vault", "audita el vault", "diagnóstico del vault"]
+triggers_pt: ["saúde do vault", "verifique o vault", "audite o vault", "diagnóstico do vault"]
+triggers_zh: ["检查知识库健康状况", "给我的知识库做体检", "审计我的笔记库", "诊断知识库问题"]
+---
+
+Use the obsidian-second-brain skill. Execute `/obsidian-health`:
+
+1. Read `_CLAUDE.md` first to find the vault path
+2. Run the health scan from the skill root (its absolute path was given at session start as **Skill root**; substitute it for `SKILL_ROOT`): `uv run --directory "SKILL_ROOT" scripts/vault_health.py --path ~/path/to/vault --json`
+   (replace vault path with the one from `_CLAUDE.md`)
+   - **Large or noisy vault?** If the scan surfaces thousands of findings from directories the user does not maintain by hand (atomic-card pools, backup snapshots, imported dumps), do NOT hardcode fixes. Offer to write a `<vault>/.vault-config.json` that extends the exclude list: `{"exclude-dirs": ["_card-pool"], "exclude-paths": ["Archive/Backup"]}`. `exclude-dirs` matches directory names anywhere in the tree; `exclude-paths` matches vault-relative path prefixes. Both are additive - the built-in excludes always apply - and a missing or malformed file is ignored silently. Re-run the scan afterward.
+3. Parse the JSON output and split findings into categories
+4. Spawn parallel subagents to handle each category simultaneously:
+   - **Wanted-notes agent**: the script reports `wanted_note` items - links to a note that does not exist yet. These are NOT errors: in a wiki-style vault you link a thing the moment you mention it, so wanted notes are a demand-ranked wishlist of pages worth writing, not breakage. Triage them with `uv run --directory "SKILL_ROOT" scripts/triage_links.py --path <vault> --limit N`, which sorts each into keep (a deliberate seed, leave it), create (referenced enough to deserve a real note now), or delete (junk or a typo - fix the link). Report-only by default; needs `ANTHROPIC_API_KEY`. Headless on purpose: it can run unattended or on a schedule. The goal is to triage the backlog, never to drive the count to zero.
+   - **Duplicates agent**: confirm duplicates are truly the same concept, not just similar names
+   - **Frontmatter agent**: identify notes missing required fields by type. If the script reports a `code_fence_wrapped` note (frontmatter trapped inside a leading ```` ```markdown ```` fence), the fix is to **unwrap it** - strip the opening fence line and the matching closing ```` ``` ```` so the inner `---` frontmatter and body become real markdown. **Never add a new frontmatter block to a wrapped note** - that produces duplicate frontmatter and leaves the body trapped. If the note already has both a prepended frontmatter block and an inner wrapped one, merge them (keep the richer fields) and unwrap.
+   - **Staleness agent**: check overdue tasks and unfilled template syntax
+   - **Orphans agent**: check orphaned notes and empty folders
+   - **Contradictions agent**: scan Key Decisions sections and reference/concept notes (the concept or knowledge folder per `references/folder-map.md` - wiki-style `wiki/concepts/`, Obsidian-style `Knowledge/`) for claims that conflict with each other or have been superseded by newer sources
+   - **Typed-edge lint agent**: run `uv run --directory "SKILL_ROOT" scripts/link_graph.py --path <vault> --lint`, which validates the `relations:` typed-edge layer (see `references/ai-first-rules.md` Rule 6 § Typed edges). It returns `findings` (each with `severity`, `kind`, `note`, `target`, `type`, `detail`) and a `summary`. Map them into the severity groups below: `contradiction` (A and B claim the same asymmetric type about each other) is 🔴 Critical; `unknown_type`, `dangling_target`, and `self_edge` are 🟡 Warning (fix the type name, the target link, or drop the self-edge); `missing_inverse` is ⚪ Info (offer to add the reciprocal edge on the target note, never required). If the vault uses no `relations:` blocks yet, this returns zero findings - not an error.
+   - **Concept gaps agent**: find terms mentioned 3+ times across different notes that lack a dedicated page - these are missing concepts the vault should have
+   - **Stale claims agent**: compare reference/concept notes (the concept or knowledge folder per `references/folder-map.md` - wiki-style `wiki/concepts/`, Obsidian-style `Knowledge/`) against their source dates - flag any note older than 6 months that references fast-moving topics (tools, APIs, pricing, team structure)
+   - **Freshness agent**: run the freshness lint - `uv run --directory "SKILL_ROOT" scripts/freshness_lint.py --path <vault> --json` - which enforces `references/freshness-policy.md`: every stored fact must be timeless, dated, or a pointer. FRESH-1 errors are present-tense claims about fast facts (counts, statuses, balances) with no `as of` stamp - the sentences that silently become lies. Report the top offenders grouped by folder; offer to fix by adding a stamp, converting to a pointer (where truth lives + last observed value), or moving the claim into a dated note. For aged stamps (FRESH-2 warnings) run the refresh loop from the policy: re-observe (check the source, update value + stamp), convert (keep only the pointer), or retire (move into a dated note as history). Never delete - restamp, convert, or mark superseded
+5. Merge results and group by severity:
+   - 🔴 Critical: unfilled template syntax, contradictions between notes, typed-edge contradiction cycles, code-fence-wrapped notes (frontmatter trapped in a fence)
+   - 🟡 Warning: duplicates, stale tasks, missing frontmatter, stale claims, concept gaps, freshness violations (undated fast facts, aged stamps), typed-edge problems (unknown type, dangling target, self-edge)
+   - ⚪ Info: wanted notes (linked but unwritten - a wishlist, not errors), orphaned notes, empty folders, missing inverse edges
+6. For safe fixes (missing frontmatter, unwrapping code-fence-wrapped notes, obvious duplicates, creating pages for concept gaps), offer to fix automatically. For a `code_fence_wrapped` note, unwrap the fence rather than adding frontmatter (see the Frontmatter agent note above).
+7. For destructive fixes (archiving, merging, resolving contradictions), list them and ask for explicit confirmation first
+8. Append to the operation log: if `Logs/` exists write `**HH:MM** - health | X critical, Y warnings, Z info` to `Logs/YYYY-MM-DD.md`; otherwise append `## [YYYY-MM-DD] health | X critical, Y warnings, Z info` to `log.md`
+
+---
+
+**AI-first rule:** Every note created or updated by this command MUST follow `references/ai-first-rules.md` - `## For future Claude` preamble, rich frontmatter (`type`, `date`, `tags`, `ai-first: true`, plus type-specific fields), recency markers per external claim, mandatory `[[wikilinks]]` for every person/project/concept referenced, sources preserved verbatim with URLs inline, and confidence levels where applicable. If that path does not resolve from your working directory, search upward for it; if you still cannot read it, say so before writing rather than producing a note that silently skips the rule. The vault is for future-Claude retrieval - not human reading.
+
+**Anti-fabrication:** Search exhaustively before claiming any note, person, or file is absent - false absence is the most common failure mode - and never invent facts, entities, or dates (mark unknowns as `TBD`). See the anti-fabrication and search-completeness hard rules in `references/ai-first-rules.md`.

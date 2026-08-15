@@ -1,0 +1,49 @@
+---
+description: Find and resolve contradictions in the vault - the vault maintains its own truth
+category: thinking
+triggers_en: ["find contradictions", "reconcile vault", "fix conflicts", "vault contradictions"]
+triggers_es: ["busca contradicciones", "concilia el vault", "resuelve los conflictos", "contradicciones en el vault"]
+triggers_pt: ["encontre contradições", "reconcilie o vault", "corrija conflitos", "contradições do vault"]
+triggers_zh: ["找出知识库里的矛盾", "解决笔记之间的冲突", "核对相互矛盾的说法", "让知识库里的事实保持一致"]
+---
+
+Use the obsidian-second-brain skill. Execute `/obsidian-reconcile $ARGUMENTS`:
+
+The optional argument is a topic or entity to focus on. If not provided, scan the whole vault.
+
+1. Read `_CLAUDE.md` first if it exists in the vault root
+2. Read `index.md` to understand the full vault landscape
+
+3. Spawn parallel subagents to find contradictions:
+   - **Claims agent**: scan the concepts and projects folders (resolved per `references/folder-map.md`) for factual claims - find pairs that contradict each other
+   - **Entity agent**: scan the entities folder (resolved per `references/folder-map.md`) for outdated roles, companies, or descriptions that conflict with newer sources
+   - **Decisions agent**: scan the decisions folder (resolved per `references/folder-map.md`) and project Key Decisions for reversed or superseded decisions that were never updated
+   - **Source freshness agent**: compare `raw/` source dates against `wiki/` page dates - flag wiki pages that reference old sources when newer ones exist on the same topic
+
+4. For each contradiction found, evaluate:
+   - **Which source is newer?** (date comparison)
+   - **Which source is more authoritative?** (peer-reviewed > blog post > transcript > opinion)
+   - **Is this a genuine contradiction or an evolution?** (someone changing their mind is not a contradiction - it's growth)
+
+5. Resolve each contradiction:
+   - **Clear winner**: rewrite the outdated page with current info. Add a `## History` section noting what changed and why: "Previously stated X (source: raw/articles/old-article.md, 2025-11-01). Updated to Y based on newer evidence (source: raw/articles/new-article.md, 2026-03-15)."
+   - **Genuinely ambiguous**: create `Conflict - Topic.md` in the decisions folder (resolved per `references/folder-map.md`; `type: conflict`, schema in `references/ai-first-rules.md`) documenting both sides, the evidence for each, and mark as `status: open` for the user to decide
+   - **Evolution**: update the entity/concept page to reflect the current state and add the historical context
+
+6. After all resolutions:
+   - Rebuild affected sections of `index.md`
+   - Append to the operation log: if `Logs/` exists write `**HH:MM** - reconcile | X contradictions found, Y auto-resolved, Z flagged for user` to `Logs/YYYY-MM-DD.md`; otherwise append `## [YYYY-MM-DD] reconcile | X contradictions found, Y auto-resolved, Z flagged for user` to `log.md`
+   - Update today's daily note with a reconciliation summary
+
+7. Report back:
+   - **Auto-resolved** (list with old claim → new claim and why)
+   - **Flagged for user** (genuinely ambiguous - needs human judgment)
+   - **Stale pages updated** (pages rewritten with fresher sources)
+
+The vault should never contain two pages that disagree without knowing they disagree. Contradictions are either resolved or explicitly documented as open questions.
+
+---
+
+**AI-first rule:** Every note created or updated by this command MUST follow `references/ai-first-rules.md` - `## For future Claude` preamble, rich frontmatter (`type`, `date`, `tags`, `ai-first: true`, plus type-specific fields), recency markers per external claim, mandatory `[[wikilinks]]` for every person/project/concept referenced, sources preserved verbatim with URLs inline, and confidence levels where applicable. If that path does not resolve from your working directory, search upward for it; if you still cannot read it, say so before writing rather than producing a note that silently skips the rule. The vault is for future-Claude retrieval - not human reading.
+
+**Anti-fabrication:** Search exhaustively before claiming any note, person, or file is absent - false absence is the most common failure mode - and never invent facts, entities, or dates (mark unknowns as `TBD`). See the anti-fabrication and search-completeness hard rules in `references/ai-first-rules.md`.

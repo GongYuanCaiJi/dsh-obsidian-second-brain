@@ -1,0 +1,19 @@
+# hermes-hooks.config.example.yaml
+#
+# Paste-in template for the `hooks:` block of your ~/.hermes/config.yaml.
+# Registers the vault maintenance hook on the on_session_end lifecycle event -
+# the Hermes analog of the Claude PostCompact hook.
+#
+# OPT-IN / SHIPS INERT. Registering the hook is not enough: the script no-ops
+# unless BOTH OBSIDIAN_VAULT_PATH and OBSIDIAN_HERMES_HOOK_ENABLED=1 are in the
+# environment (it writes to the vault unattended). See the script header for the
+# trust caveat. To disable later, clear OBSIDIAN_HERMES_HOOK_ENABLED.
+#
+# session lifecycle events take no matcher (matchers apply only to
+# pre_tool_call / post_tool_call). The script receives the on_session_end JSON
+# payload on stdin and must print JSON on stdout; this one prints `{}`.
+
+hooks:
+  on_session_end:
+    - command: "~/.hermes/agent-hooks/obsidian-hermes-session-end.sh"
+      timeout: 30

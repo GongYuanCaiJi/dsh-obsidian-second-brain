@@ -1,0 +1,25 @@
+# dsh-obsidian-second-brain - DSH bundle layer (#41)
+#
+# 上游 obsidian-second-brain 是 Claude Code plugin：核心是根目錄的 SKILL.md
+# （frontmatter 有 name: obsidian-second-brain / description，dsh skill 格式相容），
+# 46 個 commands/*.md、references/、scripts/、integrations/ 都是 SKILL.md 用相對路徑
+# 引用的資源（resourceBase = bundle 根，模型按需載入）。
+#
+# 因此這裡註冊一個 bundle 自有的 skill-filesystem host，掃描 bundle 根目錄，
+# 讓 SKILL.md 成為 dsh 可發現的 skill。用獨立 providerName + includeDefaultRoots:
+# false，避免與各 agent preset 的預設 filesystem provider 互撞，也只掃自己的根。
+#
+# baseUrl 解析（對照 app-boot/profile.ts 與官方 plugin 文檔）：
+# - bundle patch layer 的 baseUrl 是 PROFILE 目錄（$DSH_HOME/profiles/<name>/）
+# - `dsh plugin add` 把本套件裝進 <profile>/node_modules/dsh-obsidian-second-brain/
+# - 所以 new URL('node_modules/dsh-obsidian-second-brain/', baseUrl) 解析到本 bundle
+#   自己的根目錄（SKILL.md / commands/ / references/ 都在那）。
+
+- insert:
+    - id: skill-filesystem-obsidian-second-brain
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: obsidian-second-brain
+        includeDefaultRoots: false
+        customSkillDirs:
+          - !!js process.getBuiltinModule('node:url').fileURLToPath(new URL('node_modules/dsh-obsidian-second-brain/', baseUrl))

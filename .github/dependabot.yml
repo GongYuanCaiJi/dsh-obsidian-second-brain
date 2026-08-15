@@ -1,0 +1,26 @@
+# Dependabot keeps dependencies current automatically so the supply chain stays
+# patched without manual checking. https://docs.github.com/code-security/dependabot
+# Monthly + grouped: at most one PR per ecosystem per month, all bumps batched.
+version: 2
+updates:
+  # Keep GitHub Actions (in .github/workflows) up to date.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # Keep Python dependencies (pyproject.toml) up to date.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "deps"
+    groups:
+      python:
+        patterns: ["*"]

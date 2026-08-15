@@ -1,0 +1,67 @@
+{
+  "name": "dsh-obsidian-second-brain",
+  "version": "0.1.0",
+  "description": "Obsidian 第二大脑（移植自 obsidian-second-brain）",
+  "type": "module",
+  "license": "MIT",
+  "author": "GongYuanCaiJi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GongYuanCaiJi/dsh-obsidian-second-brain.git"
+  },
+  "homepage": "https://github.com/GongYuanCaiJi/dsh-obsidian-second-brain#readme",
+  "bugs": {
+    "url": "https://github.com/GongYuanCaiJi/dsh-obsidian-second-brain/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "obsidian",
+    "second-brain",
+    "knowledge-management",
+    "pkm",
+    "ai-first",
+    "note-taking",
+    "claude-code"
+  ],
+  "engines": {
+    "node": ">=20.16"
+  },
+  "files": [
+    "commands",
+    "references",
+    "hooks",
+    "scripts",
+    "integrations",
+    "adapters",
+    "docs",
+    "examples",
+    "media",
+    "tests",
+    "SKILL.md",
+    "CLAUDE.md",
+    "AI-FIRST.md",
+    "architecture.md",
+    "pyproject.toml",
+    "uv.lock",
+    "cordis.patch.yml",
+    "test",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/fidelity.test.mjs",
+    "prepare": "npm test"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-skill-filesystem": "0.1.0-rc.6"
+  },
+  "devDependencies": {}
+}
